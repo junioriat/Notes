@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,17 +36,53 @@ class authController extends Controller
         $username = $request->input('text_username');
         $password = $request->input('text_password');
 
-        // test database connection
-        try {
-            DB::connection()->getPdo();
-            echo "CONECTADO COM SUCESSO";
-        } catch (\PDOException $e) {
-            echo "ERRO AO CONECTAR COM O BANCO DE DADOS: " . $e->getMessage();
+        // check if users exists
+        $user = User::where('username', $username)
+                    ->where('deleted_at', NULL)
+                    ->first();
+        
+        if (!$user) {
+            return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('loginError', 'Username ou Password incorretos.');
         }
+
+        // check if password is correct
+        if(!password_verify($password, $user->password)){
+            return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('loginError', 'Username ou Password incorretos.');
+        }
+
+        // update last login
+        $user->last_login = date('Y-m-d H:i:s');
+        $user->save();
+
+        // login user
+        session([
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username
+            ]
+        ]);
+
+        echo 'LOGIN COM SUCESSO!';
+
+        // get all users from database
+        // $users = User::all()->toArray();
+
+        // $userModel = new User();
+        // $users = $userModel->all()->toArray();
+        // echo '<pre>';
+        // print_r($users);
     }
 
     public function logout()
     {
-        echo 'logout';
+        //logout da aplicação
+        session()->forget('user');
+        return redirect()->to('/login');
     }
 }
