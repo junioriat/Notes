@@ -68,7 +68,8 @@ class authController extends Controller
             ]
         ]);
 
-        echo 'LOGIN COM SUCESSO!';
+        //redirect to home
+        return redirect()->to('/');
 
         // get all users from database
         // $users = User::all()->toArray();
